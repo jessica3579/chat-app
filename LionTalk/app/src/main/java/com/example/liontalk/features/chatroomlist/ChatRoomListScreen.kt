@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.liontalk.ui.theme.navigation.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,7 +98,12 @@ fun ChatRoomListScreen(navController: NavHostController) {
                 } else {
                     LazyColumn {
                         items(state.chatRooms) { room ->
-                            Text(text = room.title)
+//                            Text(text = room.title,)
+                            ChatRoomItem(room = room, onClick = {
+                                navController.navigate(
+                                    Screen.ChatRoomScreen.createRoute(room.id)
+                                )
+                            })
 
                         }
                     }
