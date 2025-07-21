@@ -7,14 +7,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.liontalk.data.local.AppDatabase
 import com.example.liontalk.data.local.entity.ChatRoomEntity
+import com.example.liontalk.data.repository.ChatRoomRepository
+import com.example.liontalk.model.ChatRoomMapper.toDto
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient.Mqtt3SubscribeAndCallbackBuilder.Call.Ex
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ChatRoomListViewModel(application: Application): ViewModel() {
     private val _state = MutableLiveData(ChatRoomListState())
     val state : LiveData<ChatRoomListState> = _state
 
-    private val chatRoomDao = AppDatabase.create(application).chatRoomDao()
+//    private val chatRoomDao = AppDatabase.create(application).chatRoomDao()
+
+    private val chatRoomRepository = ChatRoomRepository(application)
 
     init {
         loadChatRooms()
@@ -24,7 +30,11 @@ class ChatRoomListViewModel(application: Application): ViewModel() {
         viewModelScope.launch {
             _state.value = _state.value?.copy(isLoading = true)
             try{
-                chatRoomDao.getChatRooms().observeForever{ rooms ->
+                withContext(Dispatchers.IO){
+                    chatRoomRepository.syncFromServer()
+                }
+
+                chatRoomRepository.getChatRoomEntities().observeForever{ rooms ->
                     _state.postValue(
                         ChatRoomListState(
                             isLoading = false,
@@ -44,11 +54,12 @@ class ChatRoomListViewModel(application: Application): ViewModel() {
             try{
                 val room = ChatRoomEntity(
                     title = title,
-                    owner = "me",
+                    owner = "suji",
                     users = emptyList(),
                     createdAt = System.currentTimeMillis()
                 )
-                chatRoomDao.insert(room)
+//                chatRoomDao.insert(room)
+                chatRoomRepository.createChatRoom(room.toDto())
             }catch (e:Exception){
                 _state.value = _state.value?.copy(isLoading = false, error = e.message)
             }

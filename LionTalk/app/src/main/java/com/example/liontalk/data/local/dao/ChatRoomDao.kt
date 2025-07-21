@@ -10,7 +10,6 @@ import com.example.liontalk.data.local.entity.ChatRoomEntity
 
 @Dao
 interface ChatRoomDao {
-
     // I/O 작업시에는 비동기 처리 해야함 (suspend)
     // 채팅룸 생성 : ID 중복인 경우 대체
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -25,5 +24,14 @@ interface ChatRoomDao {
 
     // id 에 해당하는 채팅룸 데이터 가져오기
     @Query("SELECT * FROM chat_room WHERE id=:id")
-    suspend fun getChatRoom(id: Int): ChatRoomEntity
+    fun getChatRoom(id: Int): ChatRoomEntity
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(chatRooms: List<ChatRoomEntity>)
+
+    @Query("SELECT COUNT(*) FROM chat_room")
+    suspend fun getCount(): Int
+
+    @Query("DELETE FROM chat_room")
+    suspend fun clear()
 }
