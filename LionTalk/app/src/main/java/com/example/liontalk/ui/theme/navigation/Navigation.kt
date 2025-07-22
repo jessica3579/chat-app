@@ -17,7 +17,6 @@ fun ChatAppNavigation(navController: NavHostController){
         composable(Screen.ChatRoomListScreen.route){
             ChatRoomListScreen(navController)
         }
-
         composable(Screen.ChatRoomScreen.route) { backStackentry ->
             val roomId = backStackentry.arguments?.getString("roomId")?.toIntOrNull()
             if (roomId != null) {

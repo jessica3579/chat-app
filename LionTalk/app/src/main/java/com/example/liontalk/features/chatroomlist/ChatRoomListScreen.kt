@@ -36,13 +36,13 @@ import com.example.liontalk.ui.theme.navigation.Screen
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatRoomListScreen(navController: NavHostController) {
-
-    val context = LocalContext.current
+    val context =
+        LocalContext.current // // View -> ViewMode -> Repository -> Local Data Source -> AppDataBase의 room 생성에 context가 필요하기 때문
     val viewModel = remember {
         ChatRoomListViewModel(context.applicationContext as Application)
     }
 
-    val state by viewModel.state.observeAsState(ChatRoomListState())
+    val state by viewModel.state.observeAsState(ChatRoomListState()) // observeAsState로 ChatRoomListState()의 모든 상태 감지!! live data인 state가 변경되면 자동으로 호출됨
 
     var newRoomName by remember { mutableStateOf("") }
 
@@ -50,7 +50,7 @@ fun ChatRoomListScreen(navController: NavHostController) {
         topBar = {
             TopAppBar(title = { Text("채팅방 목록") })
         },
-        content = { padding ->
+        content = { padding -> // Scaffold가 생성한 자동 여백
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -91,7 +91,7 @@ fun ChatRoomListScreen(navController: NavHostController) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
-                    ){
+                    ) {
                         Text("채팅방이 없습니다.")
                     }
 

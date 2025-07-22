@@ -5,10 +5,10 @@ import com.example.liontalk.data.remote.dto.ChatRoomDto
 
 object ChatRoomMapper {
     fun ChatRoomDto.toEntity() = ChatRoomEntity(
-        id, title, owner, users, createdAt
+        id, title, owner, users = emptyList(), createdAt
     )
 
     fun ChatRoomEntity.toDto() = ChatRoomDto(
-        id, title, owner, users, createdAt
+        id, title, owner, users = emptyList(), createdAt
     )
 }

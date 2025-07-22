@@ -3,7 +3,6 @@ package com.example.liontalk.data.repository
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.LiveData
-import com.example.liontalk.data.local.dao.ChatRoomDao
 import com.example.liontalk.data.local.datasource.ChatRoomLocalDataSource
 import com.example.liontalk.data.local.entity.ChatRoomEntity
 import com.example.liontalk.data.remote.datasource.ChatRoomRemoteDataSource

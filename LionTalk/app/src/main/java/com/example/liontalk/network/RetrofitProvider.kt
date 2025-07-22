@@ -2,7 +2,6 @@ package com.example.liontalk.network
 
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.create
 
 object RetrofitProvider {
     private val retrofit: Retrofit by lazy {
@@ -10,7 +9,8 @@ object RetrofitProvider {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
-    fun<T> create(service: Class<T>): T = retrofit.create(service)
+
+    fun <T> create(service: Class<T>): T = retrofit.create(service)
 
 
 }

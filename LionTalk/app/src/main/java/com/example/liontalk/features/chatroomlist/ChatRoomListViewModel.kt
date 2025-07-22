@@ -33,14 +33,15 @@ class ChatRoomListViewModel(application: Application): ViewModel() {
                 withContext(Dispatchers.IO){
                     chatRoomRepository.syncFromServer()
                 }
-
-                chatRoomRepository.getChatRoomEntities().observeForever{ rooms ->
-                    _state.postValue(
-                        ChatRoomListState(
-                            isLoading = false,
-                            chatRooms = rooms
+                withContext(Dispatchers.Main) {
+                    chatRoomRepository.getChatRoomEntities().observeForever { rooms ->
+                        _state.postValue(
+                            ChatRoomListState(
+                                isLoading = false,
+                                chatRooms = rooms
+                            )
                         )
-                    )
+                    }
                 }
             }catch (e: Exception){
                 _state.value = _state.value?.copy(isLoading = false, error = e.message)
@@ -48,6 +49,8 @@ class ChatRoomListViewModel(application: Application): ViewModel() {
 
         }
     }
+
+
 
     fun createChatRoom(title: String){
         viewModelScope.launch {

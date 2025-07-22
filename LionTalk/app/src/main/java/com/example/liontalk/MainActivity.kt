@@ -16,11 +16,11 @@ import androidx.navigation.compose.rememberNavController
 import com.example.liontalk.ui.theme.LionTalkTheme
 import com.example.liontalk.ui.theme.navigation.ChatAppNavigation
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity() { // 컴포즈를 이용하는 액티비티는 CompoenentActivity 상속 받음
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
+        setContent { // 화면 출력 함수
             val navController = rememberNavController()
             ChatAppNavigation(navController = navController)
         }
