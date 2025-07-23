@@ -5,12 +5,17 @@ import androidx.lifecycle.LiveData
 import com.example.liontalk.data.local.AppDatabase
 import com.example.liontalk.data.local.entity.ChatRoomEntity
 import com.example.liontalk.model.ChatUser
+import kotlinx.coroutines.flow.Flow
 
 class ChatRoomLocalDataSource(context: Context) {
     private val dao = AppDatabase.create(context).chatRoomDao()
 
     fun getChatRooms(): LiveData<List<ChatRoomEntity>> {
         return dao.getChatRooms()
+    }
+
+    fun getChatRoomsFlow(): Flow<List<ChatRoomEntity>> {
+        return dao.getChatRoomsFlow()
     }
 
     fun getChatRoom(roomId: Int) : ChatRoomEntity{

@@ -12,6 +12,8 @@ import com.example.liontalk.model.ChatRoom
 import com.example.liontalk.model.ChatRoomMapper.toEntity
 import com.example.liontalk.model.ChatRoomMapper.toModel
 import com.example.liontalk.model.ChatUser
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 class ChatRoomRepository(context: Context) {
     private val remote = ChatRoomRemoteDataSource()
@@ -20,6 +22,10 @@ class ChatRoomRepository(context: Context) {
     // local room db에서 chat room entity 목록을 가져온다.
     fun getChatRoomEntities(): LiveData<List<ChatRoomEntity>>{
         return local.getChatRooms()
+    }
+
+    fun getChatRoomsFlow(): Flow<List<ChatRoom>> {
+        return local.getChatRoomsFlow().map { it.mapNotNull { entity -> entity.toModel() } }
     }
 
     suspend fun createChatRoom(chatRoom: ChatRoomDto){
