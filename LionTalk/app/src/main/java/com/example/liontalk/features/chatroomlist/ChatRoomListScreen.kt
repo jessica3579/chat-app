@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
@@ -23,6 +25,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -52,6 +55,7 @@ fun ChatRoomListScreen(navController: NavHostController) {
     val state by viewModel.state.observeAsState(ChatRoomListState()) // observeAsState로 ChatRoomListState()의 모든 상태 감지!! live data인 state가 변경되면 자동으로 호출됨
 
     var newRoomName by remember { mutableStateOf("") }
+    var showAddRoomDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -65,13 +69,17 @@ fun ChatRoomListScreen(navController: NavHostController) {
                     )
                 },
                 navigationIcon = {
-//                    IconButton(onClick = {}) { }
+                    IconButton(onClick = {
+                        showAddRoomDialog = true
+                    }) {
+                        Icon(Icons.Default.Add, contentDescription = "채팅방 생성")
+                    }
                 },
                 actions = {
                     IconButton(onClick = {
                         navController.navigate("setting")
                     } ) {
-                        Icon(Icons.Default.Settings, contentDescription = "설명")
+                        Icon(Icons.Default.Settings, contentDescription = "설정")
                     }
                 }
             )
@@ -82,33 +90,34 @@ fun ChatRoomListScreen(navController: NavHostController) {
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp, start = 16.dp, end = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedTextField(
-                        value = newRoomName,
-                        onValueChange = { newRoomName = it },
-                        label = { Text("새 채팅방 이름") },
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 8.dp)
-                    )
+//                Row(
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .padding(bottom = 16.dp, start = 16.dp, end = 16.dp),
+//                    verticalAlignment = Alignment.CenterVertically
+//                ) {
+//                    OutlinedTextField(
+//                        value = newRoomName,
+//                        onValueChange = { newRoomName = it },
+//                        label = { Text("새 채팅방 이름") },
+//                        modifier = Modifier
+//                            .weight(1f)
+//                            .padding(end = 8.dp)
+//                    )
+//
+//                    Button(
+//                        onClick = {
+//                            if (newRoomName.isNotBlank()) {
+//                                // TODO: 실제 방추가 로직 구현
+//                                viewModel.createChatRoom(newRoomName)
+//                            }
+//                        },
+//                        modifier = Modifier.height(56.dp)
+//                    ) {
+//                        Text("방 생성")
+//                    }
+//                }
 
-                    Button(
-                        onClick = {
-                            if (newRoomName.isNotBlank()) {
-                                // TODO: 실제 방추가 로직 구현
-                                viewModel.createChatRoom(newRoomName)
-                            }
-                        },
-                        modifier = Modifier.height(56.dp)
-                    ) {
-                        Text("방 생성")
-                    }
-                }
                 Spacer(modifier = Modifier.height(16.dp))
 
                 if (state.isLoading) {
@@ -139,4 +148,36 @@ fun ChatRoomListScreen(navController: NavHostController) {
 
         }
     )
+    if(showAddRoomDialog){
+        AlertDialog(
+            onDismissRequest = { showAddRoomDialog = false },
+            title = { Text("채팅방 생성")},
+            text = {
+                OutlinedTextField(
+                    value = newRoomName,
+                    onValueChange = { newRoomName = it },
+                    label = { Text("채팅방 제목")},
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if(newRoomName.isNotBlank()){
+                        viewModel.createChatRoom(newRoomName)
+                        newRoomName = ""
+                        showAddRoomDialog = false
+                    }
+                }) {
+                    Text("생성")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showAddRoomDialog = false
+                }) {
+                    Text("취소")
+                }
+            }
+        )
+    }
 }

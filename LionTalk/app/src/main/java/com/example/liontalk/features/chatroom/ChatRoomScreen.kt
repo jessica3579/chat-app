@@ -105,7 +105,7 @@ fun ChatRoomScreen(navController: NavController, roomId: Int) {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("채팅방 $roomId")
+            TopAppBar(title = { Text("채팅방 $$roomId")
             },
                 navigationIcon = {
                     IconButton(onClick = {

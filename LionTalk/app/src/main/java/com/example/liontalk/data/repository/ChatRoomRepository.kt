@@ -60,10 +60,12 @@ class ChatRoomRepository(context: Context) {
     suspend fun enterRoom(user: ChatUser, roomId: Int): ChatRoom {
         // 1. 서버로 부터 최신 룸 정보를 가져옴
         val remoteRoom = remote.fetchRoom(roomId)
+        Log.d("Suji", "original room: $remoteRoom")
 
         val requestDto = remoteRoom.addUserIfNotExists(user)
 
         val updatedRoom = remote.updateRoom(requestDto)
+        Log.d("Suji", "updated room: $remoteRoom")
 
         if(updatedRoom != null){
             local.updateUsers(roomId, updatedRoom.users)
