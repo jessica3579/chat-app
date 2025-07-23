@@ -30,10 +30,11 @@ import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import com.example.liontalk.data.local.entity.ChatMessageEntity
+import com.example.liontalk.model.ChatMessage
 import org.intellij.lang.annotations.Subst
 
 @Composable
-fun OtherMessageItem(message: ChatMessageEntity) {
+fun OtherMessageItem(message: ChatMessage) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

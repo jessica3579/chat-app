@@ -19,9 +19,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.compose.ui.unit.sp
 import com.example.liontalk.data.local.entity.ChatMessageEntity
+import com.example.liontalk.model.ChatMessage
 
 @Composable
-fun MyMessageItem(message: ChatMessageEntity){
+fun MyMessageItem(message: ChatMessage){
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.End

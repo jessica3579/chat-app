@@ -12,16 +12,19 @@ import com.example.liontalk.data.remote.dto.TypingMessageDto
 import com.example.liontalk.data.remote.mqtt.MqttClient
 import com.example.liontalk.data.repository.ChatMessageRepository
 import com.example.liontalk.data.repository.UserPreferenceRepository
+import com.example.liontalk.model.ChatMessage
 import com.example.liontalk.model.ChatUser
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -31,13 +34,26 @@ class ChatRoomViewModel(application: Application, private val roomId: Int) : Vie
 
     //    val messages: LiveData<List<ChatMessageEntity>> = chatMessageRepository.getMessageForRoom(roomId)
 
-    val messages: StateFlow<List<ChatMessageEntity>> =
-        chatMessageRepository.getMessageForRoomFlow(roomId)
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList()
-            )
+    // 시스템 메세지 리스트
+    val _systemMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
+
+    // 채팅 메세지
+    val messages: StateFlow<List<ChatMessage>> = combine(
+        chatMessageRepository.getMessageForRoomFlow(roomId),
+        _systemMessages
+    ) { dbMessages, systemMessages ->
+        (dbMessages + systemMessages).sortedBy { it.createdAt }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+//        chatMessageRepository.getMessageForRoomFlow(roomId)
+//            .stateIn(
+//                scope = viewModelScope,
+//                started = SharingStarted.WhileSubscribed(5000),
+//                initialValue = emptyList()
+//            )
 
     private val userPreferenceRepository = UserPreferenceRepository.getInstance()
     val me: ChatUser get() = userPreferenceRepository.requireMe()
@@ -87,6 +103,7 @@ class ChatRoomViewModel(application: Application, private val roomId: Int) : Vie
 
     // MQTT - methods
     private val topics = listOf("message", "typing", "enter", "leave")
+
     // MQTT 구독 및 메세지 수신 처리
     private fun subscribeToMqttTopics() {
         MqttClient.connect()
@@ -116,21 +133,26 @@ class ChatRoomViewModel(application: Application, private val roomId: Int) : Vie
     }
 
     // 채팅방 입장 메세지 핸들러
-    private fun onReceivedEnter(message: String){
+    private fun onReceivedEnter(message: String) {
         val dto = Gson().fromJson(message, PresenceMessageDto::class.java)
-        if(dto.sender != me.name){
+        if (dto.sender != me.name) {
             viewModelScope.launch {
                 _event.emit(ChatRoomEvent.ChatRoomEnter(dto.sender))
+
+                postSystemMessage("${dto.sender} 님이 입장하셨습니다.")
             }
         }
     }
 
     // 채팅방 퇴장 메세지 핸들러
-    private fun onReceivedLeave(message: String){
+    private fun onReceivedLeave(message: String) {
         val dto = Gson().fromJson(message, PresenceMessageDto::class.java)
-        if(dto.sender != me.name){
+        if (dto.sender != me.name) {
             viewModelScope.launch {
                 _event.emit(ChatRoomEvent.ChatRoomLeave(dto.sender))
+
+                postSystemMessage("${dto.sender} 님이 퇴장하셨습니다.")
+
             }
         }
     }
@@ -144,6 +166,18 @@ class ChatRoomViewModel(application: Application, private val roomId: Int) : Vie
 //            chatMessageDao.insert(dto.toEntity()) // 로컬에 저장
             chatMessageRepository.receiveMessage(dto)
         }
+    }
+
+    private fun postSystemMessage(content: String){
+        val systemMessage = ChatMessage(
+            id = -1,
+            roomId = roomId,
+            sender = me,
+            content = content,
+            type = "system",
+            createdAt = System.currentTimeMillis()
+        )
+        _systemMessages.value = _systemMessages.value + systemMessage
     }
 
     private fun onReceivedTyping(message: String) {
@@ -181,6 +215,15 @@ class ChatRoomViewModel(application: Application, private val roomId: Int) : Vie
         typingStopJob?.cancel()
     }
 
+    // 채팅방 나가기
+    fun leaveRoom(onComplete: () -> Unit) {
+        viewModelScope.launch {
+            publishLeaveStatus()
+
+            onComplete()
+        }
+    }
+
     // 메세지 입력 이벤트 퍼블리시
     private fun publishTypingStatus(isTyping: Boolean) {
         val json = Gson().toJson(TypingMessageDto(sender = me.name, isTyping))
@@ -188,13 +231,13 @@ class ChatRoomViewModel(application: Application, private val roomId: Int) : Vie
     }
 
     // 채팅방 입장 이벤트 퍼블리시
-    private fun publishEnterStatus(){
+    private fun publishEnterStatus() {
         val json = Gson().toJson(PresenceMessageDto(me.name))
         MqttClient.publish("liontalk/rooms/$roomId/enter", json)
     }
 
     // 채팅방 퇴장 이벤트 퍼블리시
-    private fun publishLeaveStatus(){
+    private fun publishLeaveStatus() {
         val json = Gson().toJson(PresenceMessageDto(me.name))
         MqttClient.publish("liontalk/rooms/$roomId/leave", json)
     }

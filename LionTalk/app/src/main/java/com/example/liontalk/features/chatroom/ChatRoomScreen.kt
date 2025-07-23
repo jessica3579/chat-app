@@ -1,7 +1,6 @@
 package com.example.liontalk.features.chatroom
 
 import android.app.Application
-import android.widget.MediaController
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,7 +16,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -25,28 +27,26 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.liontalk.features.chatroom.components.ChatMessageItem
-import com.example.liontalk.features.chatroomlist.ChatRoomItem
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatRoomScreen(navController: MediaController, roomId: Int) {
+fun ChatRoomScreen(navController: NavController, roomId: Int) {
     val context = LocalContext.current
     val viewModel =
         remember { ChatRoomViewModel(context.applicationContext as Application, roomId) }
@@ -59,6 +59,8 @@ fun ChatRoomScreen(navController: MediaController, roomId: Int) {
 
     val typingUser = remember { mutableStateOf<String?>(null) }
     val eventFlow = viewModel.event
+    var showLeaveDialog by remember { mutableStateOf(false)}
+
     LaunchedEffect(Unit) {
         eventFlow.collectLatest { event ->
             when (event) {
@@ -72,11 +74,11 @@ fun ChatRoomScreen(navController: MediaController, roomId: Int) {
                 }
 
                 is ChatRoomEvent.ChatRoomEnter -> {
-                    Toast.makeText(context, "${event.name}가 입장하셨습니다.", Toast.LENGTH_SHORT).show()
+//                    Toast.makeText(context, "${event.name}가 입장하셨습니다.", Toast.LENGTH_SHORT).show()
                 }
 
                 is ChatRoomEvent.ChatRoomLeave -> {
-                    Toast.makeText(context, "${event.name}가 퇴장하셨습니다.", Toast.LENGTH_SHORT).show()
+//                    Toast.makeText(context, "${event.name}가 퇴장하셨습니다.", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -88,8 +90,18 @@ fun ChatRoomScreen(navController: MediaController, roomId: Int) {
             },
                 navigationIcon = {
                     IconButton(onClick = {
-                        navController
-                    }) { }
+                        navController.popBackStack()
+                    })
+                    {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "뒤로가기")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        showLeaveDialog = true
+                    }) {
+                       Icon(imageVector = Icons.Default.ExitToApp, contentDescription = "방 나가기")
+                    }
                 })
         },
         content = { padding ->
@@ -158,5 +170,31 @@ fun ChatRoomScreen(navController: MediaController, roomId: Int) {
             }
         }
     )
+
+    if(showLeaveDialog){
+        AlertDialog(
+            onDismissRequest = { showLeaveDialog = false },
+            title = { Text("채팅방 나나기 ")},
+            text = { Text("채팅방에서 나가시겠습니까? ")},
+            confirmButton = {
+                TextButton(onClick = {
+                    showLeaveDialog = false
+                    viewModel.leaveRoom {
+                        navController.popBackStack()
+                    }
+                }) {
+                    Text("확인")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showLeaveDialog = false
+                }) {
+                    Text("취소")
+                }
+            }
+
+        )
+    }
 
 }

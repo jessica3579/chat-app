@@ -7,14 +7,17 @@ import com.example.liontalk.data.local.datasource.ChatMessageLocalDataSource
 import com.example.liontalk.data.local.entity.ChatMessageEntity
 import com.example.liontalk.data.remote.datasource.ChatMessageRemoteDataSource
 import com.example.liontalk.data.remote.dto.ChatMessageDto
+import com.example.liontalk.model.ChatMessage
 import com.example.liontalk.model.ChatMessageMapper.toEntity
+import com.example.liontalk.model.ChatMessageMapper.toModel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 class ChatMessageRepository(context: Context) {
     private val remote = ChatMessageRemoteDataSource()
     private val local = ChatMessageLocalDataSource(context)
 
-    suspend fun clearLocalDB(){
+    suspend fun clearLocalDB() {
         local.clear()
     }
 
@@ -23,27 +26,27 @@ class ChatMessageRepository(context: Context) {
 //        return local.getMessageForRoomFlow(roomId)
 //    }
 
-    fun getMessageForRoomFlow(roomId: Int): Flow<List<ChatMessageEntity>> {
-        return local.getMessageForRoomFlow(roomId)
+    fun getMessageForRoomFlow(roomId: Int): Flow<List<ChatMessage>> {
+        return local.getMessageForRoomFlow(roomId).map { entity -> entity.map { it.toModel() } }
     }
 
 
     // API 서버로 메세지를 보내고 로컬 db에 저장
-    suspend fun sendMessage(message: ChatMessageDto) : ChatMessageDto? {
-        try{
+    suspend fun sendMessage(message: ChatMessageDto): ChatMessageDto? {
+        try {
             val result = remote.sendMessage(message)
-            result?.let{
+            result?.let {
                 local.insert(it.toEntity())
                 return it
             }
-        }catch (e: Exception){
+        } catch (e: Exception) {
             Log.e("ChatMessageRepository", "${e.message}")
         }
         return null
     }
 
     // MQTT 수신 메세지 로컬 DB 저장
-    suspend fun receiveMessage(message: ChatMessageDto){
+    suspend fun receiveMessage(message: ChatMessageDto) {
         local.insert(message.toEntity())
     }
 }
