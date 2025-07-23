@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.liontalk.data.local.entity.ChatMessageEntity
 import com.example.liontalk.data.remote.dto.ChatMessageDto
+import com.example.liontalk.data.remote.dto.PresenceMessageDto
 import com.example.liontalk.data.remote.dto.TypingMessageDto
 import com.example.liontalk.data.remote.mqtt.MqttClient
 import com.example.liontalk.data.repository.ChatMessageRepository
@@ -54,6 +55,9 @@ class ChatRoomViewModel(application: Application, private val roomId: Int) : Vie
             withContext(Dispatchers.IO) {
                 subscribeToMqttTopics()
             }
+
+            // 최초 채팅방 진입시 입장 이벤트 전송
+            publishEnterStatus()
         }
     }
 
@@ -106,13 +110,29 @@ class ChatRoomViewModel(application: Application, private val roomId: Int) : Vie
         when {
             topic.endsWith("/message") -> onReceivedMessage(message)
             topic.endsWith("/typing") -> onReceivedTyping(message)
-            topic.endsWith("/enter") -> onReceivedTyping(message)
-            topic.endsWith("/leave") -> onReceivedTyping(message)
+            topic.endsWith("/enter") -> onReceivedEnter(message)
+            topic.endsWith("/leave") -> onReceivedLeave(message)
         }
     }
 
+    // 채팅방 입장 메세지 핸들러
     private fun onReceivedEnter(message: String){
-        val dto =
+        val dto = Gson().fromJson(message, PresenceMessageDto::class.java)
+        if(dto.sender != me.name){
+            viewModelScope.launch {
+                _event.emit(ChatRoomEvent.ChatRoomEnter(dto.sender))
+            }
+        }
+    }
+
+    // 채팅방 퇴장 메세지 핸들러
+    private fun onReceivedLeave(message: String){
+        val dto = Gson().fromJson(message, PresenceMessageDto::class.java)
+        if(dto.sender != me.name){
+            viewModelScope.launch {
+                _event.emit(ChatRoomEvent.ChatRoomLeave(dto.sender))
+            }
+        }
     }
 
     private fun onReceivedMessage(message: String) {
@@ -161,8 +181,21 @@ class ChatRoomViewModel(application: Application, private val roomId: Int) : Vie
         typingStopJob?.cancel()
     }
 
+    // 메세지 입력 이벤트 퍼블리시
     private fun publishTypingStatus(isTyping: Boolean) {
         val json = Gson().toJson(TypingMessageDto(sender = me.name, isTyping))
         MqttClient.publish("liontalk/rooms/$roomId/typing", json)
+    }
+
+    // 채팅방 입장 이벤트 퍼블리시
+    private fun publishEnterStatus(){
+        val json = Gson().toJson(PresenceMessageDto(me.name))
+        MqttClient.publish("liontalk/rooms/$roomId/enter", json)
+    }
+
+    // 채팅방 퇴장 이벤트 퍼블리시
+    private fun publishLeaveStatus(){
+        val json = Gson().toJson(PresenceMessageDto(me.name))
+        MqttClient.publish("liontalk/rooms/$roomId/leave", json)
     }
 }

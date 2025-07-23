@@ -1,6 +1,7 @@
 package com.example.liontalk.features.chatroom
 
 import android.app.Application
+import android.widget.MediaController
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -44,9 +46,10 @@ import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatRoomScreen(roomId: Int) {
+fun ChatRoomScreen(navController: MediaController, roomId: Int) {
     val context = LocalContext.current
-    val viewModel = remember { ChatRoomViewModel(context.applicationContext as Application, roomId) }
+    val viewModel =
+        remember { ChatRoomViewModel(context.applicationContext as Application, roomId) }
 
 //    val messages by viewModel.messages.observeAsState(emptyList())
     val messages by viewModel.messages.collectAsState()
@@ -54,17 +57,26 @@ fun ChatRoomScreen(roomId: Int) {
 
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    val  typingUser = remember { mutableStateOf<String?>(null) }
+    val typingUser = remember { mutableStateOf<String?>(null) }
     val eventFlow = viewModel.event
     LaunchedEffect(Unit) {
-        eventFlow.collectLatest{ event ->
-            when(event){
+        eventFlow.collectLatest { event ->
+            when (event) {
                 is ChatRoomEvent.TypingStarted -> {
 //                    Toast.makeText(context, "${event.sender}가 메세지를 입력 합니다.", Toast.LENGTH_SHORT).show()
                     typingUser.value = event.sender
                 }
+
                 is ChatRoomEvent.TypingStopped -> {
                     typingUser.value = null
+                }
+
+                is ChatRoomEvent.ChatRoomEnter -> {
+                    Toast.makeText(context, "${event.name}가 입장하셨습니다.", Toast.LENGTH_SHORT).show()
+                }
+
+                is ChatRoomEvent.ChatRoomLeave -> {
+                    Toast.makeText(context, "${event.name}가 퇴장하셨습니다.", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -72,7 +84,13 @@ fun ChatRoomScreen(roomId: Int) {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("채팅방 $roomId") })
+            TopAppBar(title = { Text("채팅방 $roomId")
+            },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        navController
+                    }) { }
+                })
         },
         content = { padding ->
             Column(
@@ -97,7 +115,7 @@ fun ChatRoomScreen(roomId: Int) {
                         .fillMaxWidth()
                         .padding(8.dp)
                 ) {
-                    if(typingUser.value != null){
+                    if (typingUser.value != null) {
                         Text(
                             text = "${typingUser.value}님이 입력중...",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
