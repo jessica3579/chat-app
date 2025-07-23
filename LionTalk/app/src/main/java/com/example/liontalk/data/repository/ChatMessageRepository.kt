@@ -8,6 +8,7 @@ import com.example.liontalk.data.local.entity.ChatMessageEntity
 import com.example.liontalk.data.remote.datasource.ChatMessageRemoteDataSource
 import com.example.liontalk.data.remote.dto.ChatMessageDto
 import com.example.liontalk.model.ChatMessageMapper.toEntity
+import kotlinx.coroutines.flow.Flow
 
 class ChatMessageRepository(context: Context) {
     private val remote = ChatMessageRemoteDataSource()
@@ -18,9 +19,14 @@ class ChatMessageRepository(context: Context) {
     }
 
     // 현재 로컬 db에 저장된 메세지 목록 가져오기
-    fun getMessageForRoom(roomId: Int): LiveData<List<ChatMessageEntity>>{
-        return local.getMessageForRoom(roomId)
+//    fun getMessageForRoom(roomId: Int): LiveData<List<ChatMessageEntity>>{
+//        return local.getMessageForRoomFlow(roomId)
+//    }
+
+    fun getMessageForRoomFlow(roomId: Int): Flow<List<ChatMessageEntity>> {
+        return local.getMessageForRoomFlow(roomId)
     }
+
 
     // API 서버로 메세지를 보내고 로컬 db에 저장
     suspend fun sendMessage(message: ChatMessageDto) : ChatMessageDto? {
