@@ -7,7 +7,11 @@ import com.example.liontalk.data.local.datasource.ChatRoomLocalDataSource
 import com.example.liontalk.data.local.entity.ChatRoomEntity
 import com.example.liontalk.data.remote.datasource.ChatRoomRemoteDataSource
 import com.example.liontalk.data.remote.dto.ChatRoomDto
+import com.example.liontalk.data.remote.dto.addUserIfNotExists
+import com.example.liontalk.model.ChatRoom
 import com.example.liontalk.model.ChatRoomMapper.toEntity
+import com.example.liontalk.model.ChatRoomMapper.toModel
+import com.example.liontalk.model.ChatUser
 
 class ChatRoomRepository(context: Context) {
     private val remote = ChatRoomRemoteDataSource()
@@ -52,6 +56,21 @@ class ChatRoomRepository(context: Context) {
         }
     }
 
+    // 서버 및 로컬 room db 입장 처리
+    suspend fun enterRoom(user: ChatUser, roomId: Int): ChatRoom {
+        // 1. 서버로 부터 최신 룸 정보를 가져옴
+        val remoteRoom = remote.fetchRoom(roomId)
+
+        val requestDto = remoteRoom.addUserIfNotExists(user)
+
+        val updatedRoom = remote.updateRoom(requestDto)
+
+        if(updatedRoom != null){
+            local.updateUsers(roomId, updatedRoom.users)
+        }
+        return updatedRoom?.toModel() ?: throw Exception("서버 입장 처리 실패")
+
+    }
 
 
 

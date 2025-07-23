@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -35,6 +37,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -43,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.liontalk.features.chatroom.components.ChatMessageItem
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,6 +64,9 @@ fun ChatRoomScreen(navController: NavController, roomId: Int) {
     val typingUser = remember { mutableStateOf<String?>(null) }
     val eventFlow = viewModel.event
     var showLeaveDialog by remember { mutableStateOf(false)}
+
+    val listState = rememberLazyListState()
+    var coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         eventFlow.collectLatest { event ->
@@ -80,6 +87,18 @@ fun ChatRoomScreen(navController: NavController, roomId: Int) {
                 is ChatRoomEvent.ChatRoomLeave -> {
 //                    Toast.makeText(context, "${event.name}가 퇴장하셨습니다.", Toast.LENGTH_SHORT).show()
                 }
+                is ChatRoomEvent.ScrollToBottom -> {
+                    coroutineScope.launch {
+                        if(messages.isNotEmpty()){
+                            listState.animateScrollToItem(messages.lastIndex)
+                        }
+                    }
+                }
+                is ChatRoomEvent.ClearInput -> {
+                    inputMessage.value = ""
+                    keyboardController?.hide()
+                }
+                else -> Unit
             }
         }
     }
@@ -114,10 +133,10 @@ fun ChatRoomScreen(navController: NavController, roomId: Int) {
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(8.dp)
+                        .padding(8.dp),
+                    state = listState
                 ) {
                     items(messages) { message ->
-                        // TODO
                         ChatMessageItem(message, viewModel.me.name == message.sender.name)
                     }
                 }
