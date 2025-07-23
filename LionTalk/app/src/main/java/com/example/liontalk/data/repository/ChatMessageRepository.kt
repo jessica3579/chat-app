@@ -30,7 +30,6 @@ class ChatMessageRepository(context: Context) {
         return local.getMessageForRoomFlow(roomId).map { entity -> entity.map { it.toModel() } }
     }
 
-
     // API 서버로 메세지를 보내고 로컬 db에 저장
     suspend fun sendMessage(message: ChatMessageDto): ChatMessageDto? {
         try {
@@ -48,5 +47,18 @@ class ChatMessageRepository(context: Context) {
     // MQTT 수신 메세지 로컬 DB 저장
     suspend fun receiveMessage(message: ChatMessageDto) {
         local.insert(message.toEntity())
+    }
+
+    suspend fun fetchUnReadCountFromServer(roomId: Int, lastReadMessageId: Int?):Int{
+        val remoteMessages = remote.fetchMessagesByRoomId(roomId)
+
+        if(lastReadMessageId == null) return remoteMessages.size
+
+        val index = remoteMessages.indexOfLast { it.id == lastReadMessageId }
+        return if(index == -1){
+            remoteMessages.size
+        }else{
+            remoteMessages.drop(index + 1).size
+        }
     }
 }
