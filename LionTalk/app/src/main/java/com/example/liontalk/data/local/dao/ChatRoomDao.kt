@@ -25,13 +25,16 @@ interface ChatRoomDao {
     @Query("SELECT * FROM chat_room ORDER BY id desc")
     fun getChatRooms():LiveData<List<ChatRoomEntity>>
 
+    @Query("SELECT * FROM chat_room ORDER BY id desc")
+    fun getChatRoomsList() : List<ChatRoomEntity>
+
     // 전체 채팅룸 목록 가져오기
     @Query("SELECT * FROM chat_room ORDER BY id desc")
     fun getChatRoomsFlow():Flow<List<ChatRoomEntity>>
 
     // id 에 해당하는 채팅룸 데이터 가져오기
     @Query("SELECT * FROM chat_room WHERE id=:id")
-    fun getChatRoom(id: Int): ChatRoomEntity
+    fun getChatRoom(id: Int): ChatRoomEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(chatRooms: List<ChatRoomEntity>)

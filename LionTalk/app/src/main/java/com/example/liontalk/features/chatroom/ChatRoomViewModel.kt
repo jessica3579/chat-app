@@ -67,6 +67,10 @@ class ChatRoomViewModel(application: Application, private val roomId: Int) : Vie
         viewModelScope.launch {
 
             withContext(Dispatchers.IO) {
+                chatMessageRepository.syncFromServer(roomId)
+            }
+
+            withContext(Dispatchers.IO) {
                 MqttClient.connect()
             }
 
@@ -172,11 +176,15 @@ class ChatRoomViewModel(application: Application, private val roomId: Int) : Vie
     private fun onReceivedMessage(message: String) {
         // 로컬에서 등록하기 전에 서버에서 id 받아서 해당 id로 로컬에서 저장할 것
         val dto = Gson().fromJson(message, ChatMessageDto::class.java)
-        Log.d("ChatMessageEntity", "✅ avatarUrl from MQTT: ${dto.sender.avatarUrl}") // 🔍 추가
 
         viewModelScope.launch {
 //            chatMessageDao.insert(dto.toEntity()) // 로컬에 저장
             chatMessageRepository.receiveMessage(dto)
+
+            _event.emit(ChatRoomEvent.ScrollToBottom)
+
+            chatRoomRepository.updateLastReadMessageId(roomId,dto.id)
+            chatRoomRepository.updateUnReadCount(roomId,0)
         }
     }
 
@@ -236,6 +244,15 @@ class ChatRoomViewModel(application: Application, private val roomId: Int) : Vie
         }
     }
 
+    fun back(onComplete: () -> Unit){
+        viewModelScope.launch {
+            unsubscribeFromMqttTopics()
+
+            onComplete()
+        }
+    }
+
+
     // 메세지 입력 이벤트 퍼블리시
     private fun publishTypingStatus(isTyping: Boolean) {
         val json = Gson().toJson(TypingMessageDto(sender = me.name, isTyping))
@@ -250,6 +267,13 @@ class ChatRoomViewModel(application: Application, private val roomId: Int) : Vie
         // 서버 및 로컬 입장 처리
         viewModelScope.launch {
             chatRoomRepository.enterRoom(me, roomId)
+
+            val latestMessage = chatMessageRepository.getLatestMessage(roomId)
+            latestMessage?.let {
+                chatRoomRepository.updateLastReadMessageId(roomId, it.id)
+
+                chatRoomRepository.updateUnReadCount(roomId, 0)
+            }
         }
     }
 

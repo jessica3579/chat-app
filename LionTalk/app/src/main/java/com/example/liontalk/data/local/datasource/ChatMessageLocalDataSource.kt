@@ -25,5 +25,23 @@ class ChatMessageLocalDataSource(context: Context) {
         return dao.getMessageForRoomFlow(roomId)
     }
 
+    suspend fun getMessages(roomId: Int) : List<ChatMessageEntity> {
+        return dao.getMessages(roomId)
+    }
 
+    suspend fun getLatestMessage(roomId: Int): ChatMessageEntity ? {
+        return dao.getLatestMessage(roomId)
+    }
+
+    suspend fun deleteMessagesByRoomId(roomId:Int) {
+        dao.deleteMessagesByRoomId(roomId)
+    }
+
+    suspend fun insertAll(messages: List<ChatMessageEntity>) {
+        dao.insertAll(messages)
+    }
+
+    suspend fun getUnreadMessageCount(roomId: Int, lastReadMessageId: Int): Int {
+        return dao.getUnreadMessageCount(roomId,lastReadMessageId)
+    }
 }

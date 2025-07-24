@@ -14,11 +14,15 @@ class ChatRoomLocalDataSource(context: Context) {
         return dao.getChatRooms()
     }
 
+    fun getChatRoomsList() : List<ChatRoomEntity> {
+        return dao.getChatRoomsList()
+    }
+
     fun getChatRoomsFlow(): Flow<List<ChatRoomEntity>> {
         return dao.getChatRoomsFlow()
     }
 
-    fun getChatRoom(roomId: Int) : ChatRoomEntity{
+    fun getChatRoom(roomId: Int) : ChatRoomEntity?{
         return dao.getChatRoom(roomId)
     }
 

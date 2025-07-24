@@ -50,28 +50,31 @@ class ChatRoomListViewModel(application: Application) : ViewModel() {
 
             try {
                 withContext(Dispatchers.IO) {
+                    subscribeToMqttTopics()
+                }
+                withContext(Dispatchers.IO) {
+                    chatMessageRepository.syncAllMessagesFromServer()
+                }
+
+                withContext(Dispatchers.IO) {
                     chatRoomRepository.syncFromServer()
                 }
-                withContext(Dispatchers.Main) {
 
-                    chatRoomRepository.getChatRoomsFlow().collect { rooms ->
-                        val joined = rooms.filter { it.users.any { p -> p.name == me.name } }
-                        val notJoined = rooms.filter { it.users.none { p -> p.name == me.name } }
-                        Log.d("ROOM", "me: $me")
-                        Log.d("ROOM", "joined: $joined")
-                        Log.d("ROOM", "not joined: $joined")
+                chatRoomRepository.getChatRoomsFlow().collect { rooms ->
+                    val joined = rooms.filter { it.users.any { p -> p.name == me.name } }
+                    val notJoined = rooms.filter { it.users.none { p -> p.name == me.name } }
+                    Log.d("ROOM", "me: $me")
+                    Log.d("ROOM", "joined: $joined")
+                    Log.d("ROOM", "not joined: $joined")
 
-                        _state.value = _state.value.copy(
-                            isLoading = false,
-                            chatRooms = rooms,
-                            joinedRooms = joined,
-                            notJoinedRooms = notJoined
-                            )
-                    }
-                    withContext(Dispatchers.IO){
-                        subscribeToMqttTopics()
-                    }
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        chatRooms = rooms,
+                        joinedRooms = joined,
+                        notJoinedRooms = notJoined
+                    )
                 }
+
             } catch (e: Exception) {
                 _state.value = _state.value.copy(isLoading = false, error = e.message)
             }
@@ -103,39 +106,48 @@ class ChatRoomListViewModel(application: Application) : ViewModel() {
         }
     }
 
-    fun switchTab(tab: ChatRoomTab){
+    fun switchTab(tab: ChatRoomTab) {
         _state.value = _state.value.copy(currentTab = tab)
     }
 
 
     // -------------------------MQTT----------------------------
     private val topics = listOf("message")
-    private fun subscribeToMqttTopics(){
+    private fun subscribeToMqttTopics() {
         MqttClient.connect()
-        MqttClient.setOnMessageReceived{ topic, message -> {}}
+        MqttClient.setOnMessageReceived { topic, message ->
+            handleReceivedMessage(topic, message)
+        }
         topics.forEach { MqttClient.subscribe("liontalk/rooms/+/$it") } // 룸 아이디를 무시하고 message라는 토픽을 다 구독함
     }
-    private fun handleReceivedMessage(topic: String, message: String){
+
+    private fun handleReceivedMessage(topic: String, message: String) {
         when {
             topic.endsWith("/message") -> onReceivedMessage(message)
         }
     }
-    private fun onReceivedMessage(message: String){
+
+    private fun onReceivedMessage(message: String) {
         try {
             val dto = Gson().fromJson(message, ChatMessageDto::class.java)
             viewModelScope.launch {
-                val room = chatRoomRepository.getChatRoom(dto.roomId)
+                val room = withContext(Dispatchers.IO) {
+                    chatRoomRepository.getChatRoom(dto.roomId)
+                }
 
-                val unReadCount = chatMessageRepository.fetchUnReadCountFromServer(roomId = dto.roomId, room.lastReadMessageId)
-
-                chatRoomRepository.updateUnReadCount(roomId = dto.roomId, unReadCount)
+                val unReadCount = withContext(Dispatchers.IO) {
+                    chatMessageRepository.fetchUnReadCountFromServer(dto.roomId,
+                        room?.lastReadMessageId
+                    )
+                }
+                withContext(Dispatchers.IO) {
+                    chatRoomRepository.updateUnReadCount(dto.roomId, unReadCount)
+                }
             }
-        }catch (e: Exception){
+        } catch (e: Exception) {
 
         }
     }
-
-
     // -------------------------MQTT----------------------------
 
 }

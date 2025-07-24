@@ -135,9 +135,23 @@ fun ChatRoomItem(
                         style = MaterialTheme.typography.titleLarge,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
 
-//                if(room.)
+                if(room.unReadCount > 0){
+                    Box(
+                        modifier = Modifier.background(Color.Red, shape = CircleShape)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ){
+                        Text(
+                            text = room.unReadCount.toString(),
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
 
                 }
 
